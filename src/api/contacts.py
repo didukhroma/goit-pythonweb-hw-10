@@ -3,7 +3,7 @@ from fastapi import APIRouter, HTTPException, Depends, status, Query, Path
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database.db import get_db
-from src.schemas.schemas import ContactBase, ContactResponse
+from src.schemas.contacts import ContactBase, ContactResponse
 from src.services.contacts import ContactService
 
 router = APIRouter(prefix="/contacts", tags=["Contacts"])

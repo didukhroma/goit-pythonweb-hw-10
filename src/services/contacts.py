@@ -1,7 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.repository.contacts import ContactRepository
-from src.schemas.schemas import ContactBase
+from src.schemas.contacts import ContactBase
 
 from typing import Self
 

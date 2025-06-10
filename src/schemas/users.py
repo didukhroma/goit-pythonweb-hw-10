@@ -3,7 +3,6 @@ from pydantic import BaseModel, EmailStr, ConfigDict
 
 class UserModel(BaseModel):
     username: str
-    email: EmailStr
     password: str
     avatar: str
 
@@ -18,6 +17,7 @@ class UserResponse(BaseModel):
     id: int
     username: str
     email: str
+    avatar: str
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -28,3 +28,4 @@ class RequestEmail(BaseModel):
 
 class TokenModel(BaseModel):
     access_token: str
+    token_type: str = "bearer"

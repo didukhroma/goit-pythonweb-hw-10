@@ -4,20 +4,19 @@ from jose import JWTError, jwt
 from datetime import datetime, timedelta
 from fastapi import Depends, status, HTTPException
 from fastapi.security import OAuth2PasswordBearer
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from src.conf.config import settings
-from src.repository.users import UserRepository
+from src.services.users import UserService
 from src.database.db import get_db
 
 
 class Auth:
-    ALGORITHM = settings.JWT_ALGORITHM
 
     pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
     oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
-    def verify_password(self: Self, plain_password: str, hashed_password: str):
-        return self.pwd_context(plain_password, hashed_password)
+    def verify_password(self, plain_password, hashed_password):
+        return self.pwd_context.verify(plain_password, hashed_password)
 
     def get_password_hash(self: Self, password: str):
         return self.pwd_context.hash(password)
@@ -29,7 +28,7 @@ class Auth:
             {"iat": datetime.utcnow(), "exp": expire, "scope": "access_token"}
         )
         encoded_access_token = jwt.encode(
-            to_encode, settings.JWT_SECRET, algorithm=self.ALGORITHM
+            to_encode, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM
         )
         return encoded_access_token
 
@@ -39,11 +38,13 @@ class Auth:
         to_encode.update(
             {"iat": datetime.utcnow(), "exp": expire, "scope": "email_token"}
         )
-        token = jwt.encode(to_encode, settings.JWT_SECRET, algorithm=self.ALGORITHM)
+        token = jwt.encode(
+            to_encode, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM
+        )
         return token
 
     async def get_current_user(
-        self, token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)
+        self, token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db)
     ):
         credentials_exception = HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -54,7 +55,7 @@ class Auth:
         try:
             # Decode JWT
             payload = jwt.decode(
-                token, settings.JWT_SECRET, algorithms=[self.ALGORITHM]
+                token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM]
             )
             if payload.get("scope") == "access_token":
                 email = payload.get("sub")
@@ -64,8 +65,8 @@ class Auth:
                 raise credentials_exception
         except JWTError as e:
             raise credentials_exception
-
-        user = await UserRepository.get_user_by_email(email)
+        user_service = UserService(db)
+        user = await user_service.get_user_by_email(email)
 
         if user is None:
             raise credentials_exception
@@ -74,7 +75,7 @@ class Auth:
     def get_email_from_token(self, token: str):
         try:
             payload = jwt.decode(
-                token, settings.JWT_SECRET, algorithms=[self.ALGORITHM]
+                token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM]
             )
             if payload["scope"] == "email_token":
                 email = payload["sub"]

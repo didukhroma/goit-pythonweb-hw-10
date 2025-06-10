@@ -35,10 +35,9 @@ class Contact(Base):
 class User(Base):
     __tablename__ = "users"
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    username: Mapped[str] = mapped_column(String(50), nullable=False)
+    username: Mapped[str] = mapped_column(String(50), nullable=False, unique=True)
     email: Mapped[str] = mapped_column(String(100), nullable=False, unique=True)
     password: Mapped[str] = mapped_column(String(255), nullable=False)
-    access_token: Mapped[str] = mapped_column(String(255), nullable=True)
     confirmed_email: Mapped[bool] = mapped_column(Boolean, default=False)
     avatar: Mapped[str] = mapped_column(String, nullable=True)
     created_at: Mapped[DateTime] = mapped_column(

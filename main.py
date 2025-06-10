@@ -10,7 +10,7 @@ app.include_router(auth.router, prefix="/api")
 app.include_router(users.router, prefix="/api")
 
 #  Commented all lines below to use docker compose
-if __name__ == "__main__":
-    import uvicorn
+# if __name__ == "__main__":
+#     import uvicorn
 
-    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
+#     uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)

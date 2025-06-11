@@ -15,7 +15,7 @@ class ContactRepository:
     async def create_contact(
         self: Self, body: ContactBase, user=User
     ) -> Contact | None:
-        contact = Contact(**body.model_dump(exclude_unset=True), user=User)
+        contact = Contact(**body.model_dump(exclude_unset=True), user=user)
 
         exist_contact = await self.get_contact_by_email(contact.email, user)
 
@@ -30,7 +30,9 @@ class ContactRepository:
     async def get_contact_by_email(
         self: Self, contact_email: str, user: User
     ) -> Contact | None:
-        stmt = select(Contact).filter_by(email=contact_email, user=user)
+        stmt = select(Contact).filter(
+            Contact.user_id == user.id, Contact.email == contact_email
+        )
         result = await self.db.execute(stmt)
         return result.scalar_one_or_none()
 
@@ -43,13 +45,13 @@ class ContactRepository:
         email: str | None,
         user: User,
     ) -> List[Contact]:
-        stmt = select(Contact)
+        stmt = select(Contact).filter(Contact.user_id == user.id)
         if name:
-            stmt = stmt.filter_by(first_name=name, user=user)
+            stmt = stmt.filter(Contact.first_name == name)
         if surname:
-            stmt = stmt.filter_by(last_name=surname, user=user)
+            stmt = stmt.filter(Contact.last_name == surname)
         if email:
-            stmt = stmt.filter_by(email=email, user=user)
+            stmt = stmt.filter(Contact.email == email)
         stmt.offset(skip).limit(limit)
         result = await self.db.execute(stmt)
         return result.scalars().all()
@@ -57,7 +59,9 @@ class ContactRepository:
     async def get_contact_by_id(
         self: Self, contact_id: int, user: User
     ) -> Contact | None:
-        stmt = select(Contact).filter_by(id=contact_id, user=user)
+        stmt = select(Contact).filter(
+            Contact.user_id == user.id, Contact.id == contact_id
+        )
         result = await self.db.execute(stmt)
         return result.scalar_one_or_none()
 
@@ -76,18 +80,18 @@ class ContactRepository:
         exist_contact = await self.get_contact_by_id(contact_id, user)
         if exist_contact is None:
             return None
-        stmt = delete(Contact).where(Contact.id == contact_id)
-        await self.db.execute(stmt)
+        await self.db.delete(exist_contact)
         await self.db.commit()
         return True
 
-    async def birthdays(self: Self, skip: int, limit: int) -> List[Contact]:
+    async def birthdays(self: Self, skip: int, limit: int, user: User) -> List[Contact]:
         today = datetime.now().date()
         end_day = today + timedelta(days=7)
         stmt = (
             select(Contact)
             .filter(
                 and_(
+                    Contact.user_id == user.id,
                     Contact.birthday >= today,
                     Contact.birthday <= end_day,
                 )

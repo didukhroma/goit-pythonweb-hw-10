@@ -2,9 +2,11 @@ from pydantic import BaseModel, EmailStr, ConfigDict
 
 
 class UserModel(BaseModel):
+    id: int
     username: str
     password: str
     avatar: str
+    model_config = ConfigDict(from_attributes=True)
 
 
 class UserCreate(BaseModel):
